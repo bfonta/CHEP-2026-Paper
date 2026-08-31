@@ -1,0 +1,1 @@
+This repository contains the paper titled "Next-Generation Triggers for CMS at the HL-LHC: Toward Offline-Quality Real-Time Reconstruction", presented at the [CHEP 2026 conference](https://indico.cern.ch/event/1471803/contributions/6967011/).
