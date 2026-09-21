@@ -38,10 +38,10 @@
 %
 \maketitle
 %
-\section{The CMS NGT Scouting Concept}
+\section{The NGT Scouting Stream at the HL-LHC}
 \label{intro}
 The two-tiered online selection of LHC data by the Level-1 Trigger (L1T) and the High-Level Trigger (HLT) at the Compact Muon Solenoid (CMS) experiment \cite{cms} is essential to reduce the \SI{40}{\mega\hertz} LHC bunch-crossing rate to a bandwidth and storage footprint that is sustainable for offline processing and analysis.
-The L1T acts as the first filtering stage and has access to only a limited, coarse-grained detector readout; in Phase~2 it will operate with a fixed latency of \SI{12.5}{\micro\second} per event.
+The L1T acts as the first filtering stage and has access to only a limited, coarse-grained detector readout; in Phase~2, it will operate with a fixed latency of \SI{12.5}{\micro\second} per event.
 It follows the HLT, which only runs on the events accepted by the L1T, and has access to the full detector readout, operating with a latency of the order of \SI{1}{\second} per event, in Phase~2.
 Despite the overwhelming reduction of data rate between these two stages, the trigger system provides an efficient online selection of rare physics processes. \par
 %
@@ -56,12 +56,13 @@ The trigger system will therefore have to operate in an extremely challenging en
 Data scouting and parking techniques will be extensively explored and expanded during the HL-LHC era \cite{scout}. \par
 %
 The Next-Generation Trigger (NGT) project~\cite{ngt} aims to extend the physics reach of CMS beyond what is achievable with the baseline Phase~2 trigger system, by making offline-like lightweight reconstructed objects available in real time.
-One of its main goals is to pursue an ambitious next-generation scouting strategy, trading the intrinsically lower per-object precision associated with scouting-quality reconstruction for substantially larger recorded event statistics.
-This builds on the demonstrated success of CMS scouting techniques since their introduction, and their considerable expansion during Run~3 \cite{scout}.
+One of its main goals is to pursue a next-generation scouting strategy targeting the largest ever recorded scouting bandwidth, while improving on the intrinsically lower per-object precision associated with scouting-quality reconstruction.
+This builds on the demonstrated success of scouting techniques since their introduction in CMS, and their considerable expansion during Run~3 \cite{scout}.
 Concretely, the goal within NGT is to reconstruct \emph{all} events accepted by the L1T, at \SI{750}{\kilo\hertz}, and record them in a compact, analysis-ready \texttt{NanoAOD}-like data format, via a dedicated NGT Scouting stream (see Fig.~\ref{fig:concept}).
-The latter is to be compared to the HLT Standard stream, planned to work at \SI{\sim 15}{\kilo\hertz}, and to the HLT Scouting stream, currently aiming at a \SI{225}{\kilo\hertz} rate.
+The baseline scouting strategy, instead, is currently aiming at a \SI{225}{\kilo\hertz} rate~\cite{octdr}, corresponding to \SI{\sim 70}{\percent} less than the NGT proposal.
+As an additional comparison, the standard HLT approach (also in Fig.~\ref{fig:concept}), which consists of selecting high-interest events and writing out the full detector raw data for later offline analysis, is planned to work at \SI{\sim 15}{\kilo\hertz}.
 Attaining a scouting stream at \SI{750}{\kilo\hertz} requires both the development of new reconstruction algorithms and the redesign of existing ones, so that the resulting throughput remains within constraints, in terms of compute, storage, and, ultimately, cost.
-As part of this effort, up to 50\% (80\%) of the HLT code execution is planned to run on GPUs by the start of Run~4 (Run~5). \par
+As part of this effort, the target fractions of the HLT code to be offloaded to GPUs are 50\% (80\%) by the start of Run~4 (Run~5)~\cite{hlttdr}. \par
 %
 \begin{figure}[h]
 \centering
@@ -76,14 +77,14 @@ NGT also plans to innovate on how calibrations are performed at the HLT.
 In CMS, different calibration constants need to be updated at different frequencies, ranging from minutes to weeks.
 While offline calibration workflows are typically allowed to take up to 48 hours, their online counterparts must be derived much faster, introducing additional algorithmic and operational challenges.
 NGT is currently developing a real-time calibration strategy for the HLT that targets a resolution comparable to what is achieved offline.
-This idea builds on a demonstrator system which buffers $\sim$1\% of the data stream and applies improved calibrations before the HLT reconstruction, successfully operated during LHC Run~3 \cite{demonstrator}. \par
+This idea builds on a demonstrator system which buffers $\sim$1\% of the data stream and applies improved calibrations before the HLT reconstruction, successfully operated during Run~3 \cite{demonstrator}. \par
 %
-The remainder of this work focuses on two of the key algorithmic developments that will help making an offline-quality reconstruction feasible within the NGT Scouting stream: the extension and GPU-based acceleration of pixel-only tracking (Sec.~\ref{sec:track}), and the redesign of the HLT muon reconstruction chain (Sec.~\ref{sec:muon}).
+The remainder of this work focuses on two of the key algorithmic developments that will help making an offline-quality reconstruction feasible within the NGT Scouting stream: the extension to the Outer Tracker and GPU-based acceleration of the pixel-based tracking reconstruction algorithm (Sec.~\ref{sec:track}), and the redesign of the HLT muon reconstruction chain (Sec.~\ref{sec:muon}).
 %
-\section{Pixel Tracking: Extension and Acceleration}
+\section{The Extended Patatrack pixel tracking algorithm}
 \label{sec:track}
 %
-The CMS Phase-2 tracker will include \sm2.2 billion readout channels, a \sm16-fold increase compared to Run-3.
+The CMS Phase~2 tracker will include \sm2.2 billion readout channels, a \sm16-fold increase compared to Run-3~\cite{trackerphase2}.
 This dramatic rise in detector complexity helps making the tracking the single largest contributor to the HLT reconstruction time, accounting for more than 40\% of the total processing budget, and therefore the primary target for new algorithmic and heterogeneous developments.
 Full track reconstruction proceeds through three sequential steps:
 \begin{itemize}
@@ -98,7 +99,7 @@ Full track reconstruction proceeds through three sequential steps:
 In this work we implement and study the following three tracking configurations:
 %
 \begin{itemize}
-\item \texttt{Legacy}: the original full-track reconstruction, running two sequential CA-seeded iterations (IT-only quadruplets, followed by triplets), with track building and fitting performed entirely by CKF. This configuration includes no heterogeneous (GPU) implementation.
+\item \texttt{Legacy}: the reference tracking reconstruction sequence, running two sequential CA-seeded iterations (IT-only quadruplets, followed by triplets), with track building and fitting performed entirely by CKF. This configuration includes no heterogeneous (GPU) implementation.
 \item \texttt{Patatrack}: functionally equivalent to \texttt{Legacy}, with the same two IT-only quadruplet and triplet iterations, but the pixel-seed creation step is offloaded to the GPU-compatible \textit{Patatrack} algorithm, while the building and fitting steps remain unchanged.
 \item \texttt{Extended Patatrack}: a fast, scouting-oriented configuration in which a single \textit{Patatrack} seeding iteration is run using \emph{both} IT and OT pixel hits, requiring at least four hits in total, of which at least two must belong to the IT. Only the barrel section of the pixel OT is considered.
   The three outermost strip layers of the OT are also not considered.
@@ -106,6 +107,8 @@ In this work we implement and study the following three tracking configurations:
   CKF is not run at all, and no separate full-track building or second iteration is performed.
 \end{itemize}
 %
+\subsection{Performance measurements}
+\label{sec:trackperf}
 \begin{figure}[h]
 \centering
 \includegraphics[width=1.\textwidth]{track_perf}
@@ -116,7 +119,9 @@ In this work we implement and study the following three tracking configurations:
 \label{fig:trackperf}
 \end{figure}
 %
-These three configurations are compared in terms of physics and timing performance in Fig.~\ref{fig:trackperf}.
+The three configurations presented in Section~\ref{sec:track} are compared in terms of physics and timing performance in Fig.~\ref{fig:trackperf}.
+There, the tracking efficiency is defined as the fraction of simulated tracks matched to at least one reconstructed track, where a reconstructed track is considered matched to a simulated track if more than 75\% of the associated hits originate from the simulated track.
+The fake rate, instead, is defined as the fraction of reconstructed tracks not matched to any simulated track.
 We observe that the \texttt{Extended Patatrack} configuration achieves a very strong reduction of the fake rate in the barrel region compared to the two other configurations.
 At the same time, however, it exhibits a lower efficiency across most of the $\eta$ spectrum, albeit of the order of $\sim$5\% only.
 This small reduction occurs despite not considering the strip section of the OT, neither the pixel OT hits in the endcaps.
@@ -206,22 +211,24 @@ Given existing similarities, it is expected for the NGT improvements to be also 
 % Journal Author, Article title. Journal \textbf{Volume}, page numbers (year). \url{https://doi.org/Article-DOI-number}
 \bibitem{cms}
   The CMS Collaboration. ``The CMS Experiment at the CERN LHC''. In: JINST 3 (2008), S08004. DOI: \url{10.1088/1748-0221/3/08/S08004}.
-\bibitem{ngt}
-  Next Generation Triggers. (2026). NGT Evaluation Report - 2025. CERN. DOI: \url{https://doi.org/10.17181/dvqah-g0f70}
-\bibitem{trackerphase2}
-  The CMS Collaboration, ``The Phase-2 Upgrade of the CMS Tracker''. \url{https://cds.cern.ch/record/2272264}
-\bibitem{ngtdps}
-  The CMS Collaboration, ``Computing and physics performance of a high-throughput NGT Scouting stream for the HLT Phase-2 Upgrade''. \url{https://cds.cern.ch/record/2956836}
-\bibitem{octdr}
-  The CMS Collaboration, ``CMS Offline Software and Computing for HL-LHC, Conceptual Design Report''. \url{https://cds.cern.ch/record/2957472}
-\bibitem{demonstrator}
-  The CMS Collaboration, ``Next Generation Triggers Demonstrator: Time Variation of the Calibrations and System Monitoring''. \url{https://cds.cern.ch/record/2950076}
-\bibitem{muonphase2}
-  The CMS Collaboration, ``Muon Tracking at the CMS High-Level Trigger for the HL-LHC Upgrade''. \url{https://cds.cern.ch/record/2950077}
 \bibitem{scout}
   The CMS Collaboration, ``Enriching the physics program of the CMS experiment via data scouting and data parking''. Physics Reports Volume 1115, 17 April 2025, Pages 678-772. \url{https://doi.org/10.1016/j.physrep.2024.09.006}
+\bibitem{ngt}
+  Next Generation Triggers. (2026). NGT Evaluation Report - 2025. CERN. DOI: \url{https://doi.org/10.17181/dvqah-g0f70}
+\bibitem{octdr}
+  The CMS Collaboration, ``CMS Offline Software and Computing for HL-LHC, Conceptual Design Report''. \url{https://cds.cern.ch/record/2957472}  
+\bibitem{hlttdr}
+  The CMS Collaboration. ``The Phase-2 Upgrade of the CMS Data Acquisition and High Level Trigger''. \url{https://cds.cern.ch/record/2759072/}
+\bibitem{demonstrator}
+  The CMS Collaboration, ``Next Generation Triggers Demonstrator: Time Variation of the Calibrations and System Monitoring''. \url{https://cds.cern.ch/record/2950076}  
+\bibitem{trackerphase2}
+  The CMS Collaboration, ``The Phase-2 Upgrade of the CMS Tracker''. \url{https://cds.cern.ch/record/2272264}
 \bibitem{ckf}
   R. Mankel. ``A concurrent track evolution algorithm for pattern recognition in the HERA-B main tracking system''. Nucl. Instrum. Methods A395 (1997) 169. \url{https://doi.org/10.1016/S0168-9002(97)00705-5}
+\bibitem{ngtdps}
+  The CMS Collaboration, ``Computing and physics performance of a high-throughput NGT Scouting stream for the HLT Phase-2 Upgrade''. \url{https://cds.cern.ch/record/2956836}
+\bibitem{muonphase2}
+  The CMS Collaboration, ``Muon Tracking at the CMS High-Level Trigger for the HL-LHC Upgrade''. \url{https://cds.cern.ch/record/2950077}
 \bibitem{patatrack}
   A. Bocci et al. ``Heterogeneous Reconstruction of Tracks and Primary Vertices With the CMS Pixel Tracker''. Frontiers in Big Data Volume 3 - 2020 (2020). issn: 2624-909X. DOI: \url{10.3389/fdata.2020.601728}. url: ht\url{tps://arxiv.org/abs/2008.13461}.
 %  
