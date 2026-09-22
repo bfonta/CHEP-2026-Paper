@@ -1,0 +1,125 @@
+% cr_template.tex
+% Compile with: pdflatex cr_template.tex
+% Put these logo files in the same directory as this .tex file:
+%   CMSlogo_black_label_1024.png
+%   LogoOutline-Black.pdf
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,left=25mm,right=25mm,top=18mm,bottom=15mm]{geometry}
+\usepackage{graphicx}
+\usepackage{helvet}
+\usepackage{times}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{ragged2e}
+\usepackage{ifthen}
+\pagestyle{empty}
+\usepackage{siunitx}
+% ============================================================
+% Variables to edit
+% ============================================================
+\newcommand{\CRTitle}{Next-Generation Triggers for CMS at the HL-LHC: Toward Offline-Quality Real-Time Reconstruction}
+\newcommand{\CRAuthors}{Bruno Alves, for the CMS Collaboration}
+\newcommand{\CRAbstract}{\input{../abstract.tex}}
+\newcommand{\CRConference}{28th Conference on Computing in High Energy and Nuclear Physics (CHEP 2026)}
+\newcommand{\CRNoteNumber}{CR-2026/181} % e.g. CR-2026/003
+\newcommand{\CRDate}{September 18, 2026 (v2, \today)} % leave this unless there are some good reasons to change
+%\newcommand{\CRDate}{12 April 2026}
+
+
+% Logo filenames
+\newcommand{\CMSLogo}{CMSlogo_black_label_1024.png}
+\newcommand{\CERNLogo}{LogoOutline-Black.pdf}
+
+\newcommand{\NarrowHelveticaBold}[1]{%
+  \scalebox{0.85}[1.0]{%
+    {\fontfamily{phv}\selectfont\fontsize{36}{40}\selectfont\bfseries #1}%
+  }%
+}
+
+
+% ============================================================
+% Small layout helpers
+% ============================================================
+\newcommand{\thinrule}{\noindent\rule{\textwidth}{0.4pt}}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+
+% Top line: information server and note number
+%\vspace*{4mm}
+\noindent
+\begin{minipage}[t]{0.50\textwidth}
+\raggedright
+\fontsize{10}{14}\selectfont Available on CMS information server
+\end{minipage}%
+\begin{minipage}[t]{0.50\textwidth}
+\raggedleft
+\fontsize{14}{14}\selectfont\bfseries CMS \CRNoteNumber
+\end{minipage}
+
+%\vspace{4mm}
+\thinrule
+%\vspace{3mm}
+
+% Header with logos and CMS CR title
+\noindent
+\begin{minipage}[c]{0.15\textwidth}
+\centering
+\includegraphics[width=0.95\linewidth]{\CMSLogo}
+\end{minipage}%
+\begin{minipage}[c]{0.70\textwidth}
+\centering
+{\fontsize{14}{18}\selectfont\bfseries The Compact Muon Solenoid Experiment\par}
+\vspace{2mm}
+{\centering \NarrowHelveticaBold{Conference Report}\par}
+%{\fontfamily{phv}\selectfont\fontsize{36}{40}\selectfont\bfseries Conference Report\par}
+\vspace{2mm}
+{\fontsize{9}{10}\selectfont Mailing address: CMS CERN, CH-1211 GENEVA 23, Switzerland\par}
+\end{minipage}%
+\begin{minipage}[c]{0.15\textwidth}
+\centering
+\includegraphics[width=0.95\linewidth]{\CERNLogo}
+\end{minipage}
+
+%\vspace{3mm}
+\thinrule
+
+% Date, with no version number
+%\vspace{6mm}
+\begin{flushright}
+{\fontsize{12}{18}\selectfont\bfseries \CRDate\par}
+\end{flushright}
+
+% Main title
+\vspace{11mm}
+{\fontfamily{phv}\selectfont\fontsize{20}{26}\selectfont \CRTitle\par}
+
+% Authors
+\vspace{5mm}
+{\fontsize{10}{16}\selectfont \CRAuthors\par}
+
+% Abstract
+\vspace{8.5mm}
+{\fontsize{10}{12}\selectfont\bfseries Abstract\par}
+\vspace{2.5mm}
+\begin{minipage}{0.86\textwidth}
+\justifying
+\fontsize{10}{12}\selectfont
+\CRAbstract
+\end{minipage}
+
+% Conference line
+\vspace{6mm}
+\begin{minipage}{0.98\textwidth}
+\raggedright
+{\fontsize{10}{12}\selectfont Presented at \textit{\CRConference}\par}
+\end{minipage}
+
+\vfill
+\end{titlepage}
+
+\end{document}
