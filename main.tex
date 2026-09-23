@@ -8,9 +8,11 @@
 \usepackage{siunitx}
 %
 \usepackage{pdfpages}
+\immediate\write18{pdflatex -output-directory=FirstPage FirstPage/cr_template.tex}
+\usepackage{standalone}
 %
-\usepackage{lineno} % for line numbers
-\linenumbers % for line numbers
+% \usepackage{lineno} % for line numbers
+% \linenumbers % for line numbers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypersetup{colorlinks=true,citecolor=blue,urlcolor=blue,linkcolor=blue}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +32,7 @@
 %%%\subtitle{Do you have a subtitle?\\ If so, write it here}
 % 
 \author{
-    \firstname{Bruno} \lastname{Alves}\inst{1} \fnsep\thanks{\email{bruno.alves@cern.ch}} for the CMS collaboration
+  \firstname{Bruno} \lastname{Alves}\inst{1}\fnsep\thanks{\email{bruno.alves@cern.ch}}, on behalf of the CMS collaboration\footnote{Copyright 2026 CERN for the benefit of the CMS Collaboration. Reproduction of this article or parts of it is allowed as specified in the CC-BY-4.0 license.}
 }
 % 
 \institute{
@@ -48,10 +50,11 @@ The L1T acts as the first filtering stage and has access to only a limited, coar
 It follows the HLT, which only runs on the events accepted by the L1T, and has access to the full detector readout, operating with an average processing-time budget of the order of \SI{1}{\second} per event, in Phase~2.
 Despite the overwhelming reduction of data rate between these two stages, the trigger system provides an efficient online selection of rare physics processes. \par
 %
-Innovative strategies have been set in place to further extend the phase-space the trigger system has access to, overcoming past limitations~\cite{scout}.
-Using \textit{data parking}, the raw data is stored but reconstructed only when compute becomes available.
-With \textit{data scouting}, some of the data selected by the L1T is immediately processed by the HLT, but is recorded using a reduced, analysis-ready data format, without going through the offline reconstruction.
-Such an approach enables a significant reduction of trigger thresholds with respect to the standard data stream, and thus the exploration of phase-space regions otherwise inaccessible, at the cost of the resolution degradation of physics objects. \par
+Innovative trigger strategies have been employed in CMS since its inception, and quite intensely during Run~3~\cite{scout}.
+One such strategy, \textit{data parking}, addresses the limited availability of prompt computing resources by storing the raw data while deferring the full reconstruction until resources are again available.
+Another strategy, \textit{data scouting}, which this work discusses, addresses both storage and computing limitations by reconstructing events collected by related scouting streams only up to HLT level.
+The resulting scouting output is a reduced analysis-ready data format which by-passes the offline reconstruction.
+These strategies enable a significant reduction of trigger thresholds with respect to the standard data stream, and thus the exploration of phase-space regions otherwise inaccessible, at the cost of the resolution degradation of physics objects. \par
 %
 The High-Luminosity LHC (HL-LHC) is scheduled to start taking data in 2030, reaching unprecedented instantaneous luminosities of \sm\SI{7.5e34}{\per\square\centi\meter\per\second}, corresponding to a \num{\sim 3.5} times increase over peak Run~3 conditions, and an average pileup of 200, compared to \num{\sim 60} in Run~3.
 Many CMS subdetectors will undergo significant upgrades for this phase, ranging from electronics-only updates, as for the barrel electromagnetic calorimeter, to complete overhauls, as will be the case of the endcap calorimeter.
@@ -136,7 +139,7 @@ In this work we implement and study the following three tracking configurations:
 \includegraphics[width=1.\textwidth]{track_perf}
 \caption{Full tracking efficiency performance as a function of the pseudorapidity ($\eta$) of the simulated track.
   The left (right) figure shows the tracking efficiency (fake rate) of the \texttt{Legacy} (blue), \texttt{Patatrack} (orange), and \texttt{Extended Patatrack} (red) configurations.
-  The \texttt{Extended Patatrack} configuration achieves a very strong reduction of the fake rate in the barrel region compared to the two other configurations, at the cost of a relatively modest 5\% relative efficiency reduction, despite exploiting substantially less detector information. Taken from~\cite{ngtdps}.
+  The \texttt{Extended Patatrack} configuration achieves a very strong reduction of the fake rate in the barrel region compared to the two other configurations, at the cost of a relatively modest 5\% relative efficiency reduction, despite exploiting substantially less detector information. Taken from Ref.~\cite{ngtdps}.
 }
 \label{fig:trackperf}
 \end{figure}
@@ -169,7 +172,7 @@ The GPU-based pixel-tracking step thus becomes negligible in terms of processing
   The CPU-only \texttt{Legacy} result is identical in both panels, since this configuration includes no heterogeneous implementation.
   The \texttt{Extended Patatrack} configuration yields an 18\% speed-up relative to the \texttt{Patatrack} configuration in the average processing time per event for the CPU-only setup -- already including the additional cost of incorporating OT macro-pixel hits -- owing to the use of pixel-only tracks and the removal of both the second iteration and the CKF step.
   The same configuration reaches a 34\% speed-up relative to the \texttt{Patatrack} configuration when GPUs are enabled, for identical reasons, on top of the 8\% higher throughput of the \textit{Patatrack} algorithm on GPUs, rendering the pixel-tracking step essentially negligible in terms of processing time.
-  Taken from~\cite{ngtdps}.
+  Taken from Ref.~\cite{ngtdps}.
 }
 \label{fig:timing}
 \end{figure}
@@ -177,28 +180,29 @@ The GPU-based pixel-tracking step thus becomes negligible in terms of processing
 \section{Rethink and Optimize the Muon Tracking}
 \label{sec:muon}
 %
-The default HLT muon reconstruction in CMS builds objects in the tracker and in the muon chambers, at first along independent reconstruction paths: one for Standalone Muons (SM), using muon-only seeds, and another for Tracker Muons (TM), using L1T seeds with both muon and tracker information.
-TMs and SMs are later linked together in the global muon reconstruction step.
-The TM reconstruction runs two steps: the Inside-Out (IO) and the Outside-In (OI).
+The default HLT Phase~2 muon reconstruction in CMS builds objects in the tracker and in the muon chambers: standalone muons, using muon-only seeds, and tracker muon tracks, using L1T seeds with both muon and tracker information.
+The reconstruction of tracker muon tracks runs two steps: the Inside-Out (IO) and the Outside-In (OI).
 The IO step uses L1T seeds to define regions of interest in the IT, where two tracking iterations are run, following the logic of the \texttt{Legacy} configuration for pixel tracks (see Sec.~\ref{sec:track}).
 Importantly, pixel tracks are recomputed.
-The OI starts instead from OT seeding regions (built from the direction of SMs), where a CKF approach is used to produce a trajectory connecting hits in the direction of the IT.
-TMs are then matched to SMs to produce global muons, by comparing parameters after propagating both trajectories to a common surface.
+The OI starts instead from OT seeding regions (built from the direction of standalone muons), where a CKF approach is used to produce a trajectory connecting hits in the direction of the IT.
+Tracker muon tracks are then matched to standalone muons to produce global muons, by comparing parameters after propagating both trajectories to a common surface.
 Finally, an identification procedure is applied to HLT muon candidates, producing the final HLT muons. \par
 %
-In this work, some major updates are proposed and validated.
-Firstly, we show that removing muon seeds does not impact physics performance, simplifying the reconstruction chain.
-A single set of L1T seeds is now considered, requiring no further match with other seed collections, and is directly used to produce SMs. 
-Secondly, the IO and OI steps are chained in such a way as to use the OI step only as a recovery step, in case the IO step misses some muon candidates.
-This approach avoids reconstructing muon candidates twice.
-Finally, the IO single iteration is overhauled: the \texttt{Legacy} pixel tracks are replaced by the pixel tracks created with the \texttt{Extended Patatrack} configuration.
-On top, instead of being recomputed, the new pixel tracks are simply recycled from the ones already computed for tracking purposes, again looking at specific seeding regions. \par
+This work proposes and validates major updates to the HLT muon reconstruction chain.
+Firstly, we show that removing muon seeds does not impact physics performance.
+A single set of L1T seeds is now considered, requiring no further match with other seed collections, and is directly used to produce standalone muons, simplifying the reconstruction.
+Secondly, the IO step is overhauled: within tracker seed regions, \texttt{Legacy} pixel tracks are replaced by pixel tracks created with the \texttt{Extended Patatrack} configuration plus a CKF propagation step to the OT.
+This equates to moving from two iterations to a single iteration IO step.
+On top, instead of being recomputed, extended pixel tracks selected within a given seed region are simply recycled from the ones already computed for tracking purposes.
+Finally, the IO and OI steps are chained such that the OI sequence acts solely as a recovery mechanism for muon candidates missed during the IO step, thereby avoiding duplicate reconstruction. \par
 %
-In this context, the efficiency is defined as the fraction of simulated target muons that are matched to a reconstructed muon object, where a matching is considered if the two objects share more than 75\% of their hits.
+The performance improvements brought by the updates to the muon tracking were measured in simulated $\text{Z}\rightarrow\mu\mu$ events under HL-LHC conditions, with an average pileup of 200.
+The efficiency is here defined as the fraction of simulated target muons that are matched to a reconstructed muon object, where a matching is considered if the two objects share more than 75\% of their hits.
 The fake rate is instead defined as the ratio of reconstructed muons not matched to any simulated target muon over the total number of reconstructed muons.
-Note that only a subset of the simulated muons is considered.
-In particular, simulated muons must satisfy $|\eta| \leq 2.4$ and $p_\text{T} > 0.9$ GeV, and must come from the signal event.
-In Fig.~\ref{fig:muonperf} we show the performance of the new single iteration IO step, in terms of reconstruction efficiency and fake rate, when compared to the legacy, two-iteration IO approach.
+The muons are reconstructed by merging the IO and OI muon track collections, ie., also taking into accout the OI recovery step.
+Only simulated muons produced in the Z decay within the detector acceptance conditions are considered.
+In particular, simulated muons must satisfy $|\eta| \leq 2.4$ and $p_\text{T} > 0.9$ GeV.
+Performance results are shown in Fig.~\ref{fig:muonperf} in terms of reconstruction efficiency (left) and fake rate (right), where the new single iteration IO step is compared to the legacy, two-iteration IO approach.
 We can observe that the new iteration, in orange, achieves an efficiency of $\sim$95\%, comparable to the default blue one.
 At the same time, the fake rate is reduced by $\sim$20\% in the central part of the barrel section, reaching a $\sim$35\% improvement at $|\eta| \sim 1.2$.
 Smaller improvements of $\sim$5\% or less can also be observed in the endcaps.
@@ -209,13 +213,13 @@ Parameter optimization is ongoing to further boost performance. \par
 \centering
 \includegraphics[width=1.\textwidth]{muon_perf}
 \caption{Physics performance of the new single iteration IO step.
-  The blue distribution represents the muon reconstruction by running first the IO step, and then the OI as a recovery step, using the \texttt{Legacy} configuration.
-  The orange distribution represents the single iteration approach using the \texttt{Extended Patatrack} configuration.
+  The two distributions represent the HLT muon reconstruction by running first the IO step, and then the OI as a recovery step.
+  The blue distribution uses the \texttt{Legacy} configuration for the IO step, while the orange distribution considers the single iteration approach using the \texttt{Extended Patatrack} configuration for the IO step.
   The left (right) plot shows the reconstruction efficiency (fake rate) of HLT Muon tracks as a function of the simulated muon pseudorapidity $\eta$.
   The efficiency curves are comparable.
   The fake rate is reduced by $\sim$20\% in the central part of the barrel section, reaching a $\sim$35\% improvement at $|\eta| \sim 1.2$.
   Smaller improvements of $\sim$5\% or less can also be observed in the endcaps.
-  Taken from~\cite{muonphase2}.
+  Taken from Ref.~\cite{muonphase2}.
 }
 \label{fig:muonperf}
 \end{figure}
