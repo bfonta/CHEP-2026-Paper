@@ -128,7 +128,7 @@ In this work we implement and study the following three tracking configurations:
   This tracking reconstruction configuration runs sequentially and is CPU-only.
 \item \texttt{Patatrack}: functionally equivalent to \texttt{Legacy}, with the same two IT-only quadruplet and triplet iterations, but the pixel-seed creation step is offloaded to the GPU-compatible \textit{Patatrack} algorithm, while the building and fitting steps remain unchanged.
 \item \texttt{Extended Patatrack}: a fast, scouting-oriented configuration in which a single \textit{Patatrack} seeding iteration is run using \emph{both} IT and macro-pixel hits from PS modules, requiring at least four hits in total, of which at least two must belong to the IT.
-  Only the barrel section of the pixel OT is considered.
+  Only the barrel macro-pixel region of the Outer Tracker is considered.
   The three outermost strip layers of the OT are also not considered.
   The resulting extended, GPU-compatible pixel tracks are used directly as final tracks.
   CKF is not run, and no separate full-track building or second iteration is performed.
@@ -141,7 +141,7 @@ In this work we implement and study the following three tracking configurations:
 \includegraphics[width=1.\textwidth]{track_perf}
 \caption{Full tracking efficiency performance as a function of the pseudorapidity ($\eta$) of the simulated track.
   The left (right) figure shows the tracking efficiency (fake rate) of the \texttt{Legacy} (blue), \texttt{Patatrack} (orange), and \texttt{Extended Patatrack} (red) configurations.
-  The \texttt{Extended Patatrack} configuration achieves a very strong reduction of the fake rate in the barrel region compared to the two other configurations, at the cost of a relatively modest 5\% relative efficiency reduction, despite exploiting substantially less detector information. Taken from Ref.~\cite{ngtdps}.
+  The \texttt{Extended Patatrack} configuration achieves a very strong reduction of the fake rate in the barrel region compared to the two other configurations, while maintaining a competitive efficiency across the detector, with deviations typically within a few percent depending on $\eta$, despite exploiting substantially less detector information. Taken from Ref.~\cite{ngtdps}.
 }
 \label{fig:trackperf}
 \end{figure}
@@ -150,9 +150,9 @@ The three configurations presented in Section~\ref{sec:track} are compared in te
 There, the tracking efficiency is defined as the fraction of simulated tracks matched to at least one reconstructed track, where a reconstructed track is considered matched to a simulated track if more than 75\% of the associated hits originate from the simulated track.
 The fake rate is defined as the fraction of reconstructed tracks not matched to any simulated track.
 We observe that the \texttt{Extended Patatrack} configuration significantly reduces the fake rate in the barrel region ($|\eta| < 1.47$) by up to $\sim$25\% compared to the other two configurations.
-Simultaneously, its efficiency in the endcaps remains compatible with the baseline within 5\%, while in the barrel, especially near the transition regions ($|\eta| \approx 1.5$), both \textit{Patatrack}-based configurations achieve up to $\sim$10\% higher efficiency.
-Moreover, for very high $|\eta|$ values, the two \textit{Patatrack} configurations achieve a higher efficiency.
-It should be noted that these measurements do not consider the strip section of the OT, nor the pixel-strip modules in the endcaps.
+Simultaneously, its efficiency in the endcaps remains compatible with the baseline within 5\%, while in the barrel, especially near the transition regions ($|\eta| \approx 1.5$), the \texttt{Legacy} and \texttt{Patatrack} configurations achieve up to $\sim$15\% higher efficiency.
+Moreover, for very high $|\eta|$ values, the \textit{Patatrack}-based configurations achieve a higher efficiency.
+It should be noted that the \texttt{Extended Patatrack} measurements do not consider the strip section of the OT, nor the pixel-strip modules in the endcaps.
 The results shown in Fig.~\ref{fig:trackperf} illustrate the potential of pixel-based tracking to complement full offline-quality tracking at the HLT. \par
 %
 To assess the computational feasibility of the NGT Scouting strategy, the average per-event processing time spent in the different HLT modules was measured for each of the three tracking configurations, and is shown in Fig.~\ref{fig:timing}.
@@ -183,7 +183,7 @@ The GPU-based pixel-tracking step thus becomes negligible in terms of processing
 \label{sec:muon}
 %
 The default HLT Phase~2 muon reconstruction in CMS builds objects in the tracker and in the muon chambers: standalone muons, using muon-only seeds, and tracker muon tracks, using L1T seeds with both muon and tracker information.
-The reconstruction of tracker muon tracks consists of two steps: the Inside-Out (IO) step and the Outside-In (OI) step.
+The reconstruction of tracker muon tracks barwo steps: the Inside-Out (IO) step and the Outside-In (OI) step.
 The IO step uses L1T seeds to define regions of interest in the IT, where two tracking iterations are run, following the logic of the \texttt{Legacy} configuration for pixel tracks (see Sec.~\ref{sec:track}).
 Importantly, pixel tracks are recomputed.
 The OI starts instead from OT seeding regions (built from the direction of standalone muons), where a CKF approach is used to produce a trajectory connecting hits in the direction of the IT.
